@@ -1,0 +1,128 @@
+# COVID-19 PROJECT
+
+
+# FIRST STEPS ----
+
+# loading the package we'll need
+library(tidyverse)
+
+# dataset loading
+covid_df <- read_csv("data/covid19.csv")
+
+dim(covid_df)  # to see the size of the dataframe
+head(covid_df)  # to see the first 6 rows of the dataframe
+glimpse(covid_df)  # useful to have an overview about a dataset
+view(covid_df)
+
+# checking the column names 
+vector_cols <- colnames(covid_df)
+vector_cols
+class(vector_cols)
+typeof(vector_cols)
+
+# looking for the unique values
+unique(covid_df$Continent_Name)
+unique(covid_df$Two_Letter_Country_Code)
+unique(covid_df$Country_Region)
+unique(covid_df$Province_State)
+
+
+# FILTERING DATA ----
+
+# let's filter for "All States" e remove the column of Province_State
+covid_df_all_states <- covid_df %>%
+  filter(Province_State == "All States") %>%
+  select(-Province_State)
+covid_df_all_states
+# we can remove this column beacause the data we took out from the dataset
+# these are just repetitions of data we already have
+# when state/provincial level data is not available it's written "All States"
+# so we can't loose information in that way, we just cleaned the dataset
+
+# creating a subset with daily data
+covid_df_all_states_daily <- covid_df_all_states %>%
+  select(Date, Country_Region, active, hospitalizedCurr,
+         daily_tested, daily_positive)
+covid_df_all_states_daily
+#view(covid_df_all_states_daily)
+
+# creating another susbset with summarized data about tests for covid
+covid_df_all_states_daily_sum <- covid_df_all_states_daily %>%
+  group_by(Country_Region) %>%  # grouped by country
+  summarize(
+    tested = sum(daily_tested),
+    positive = sum(daily_positive),
+    active = sum(active),
+    hospitalized = sum(hospitalizedCurr)
+  ) %>%
+  arrange(-tested)  # descending order
+covid_df_all_states_daily_sum
+view(covid_df_all_states_daily_sum)
+
+# first 10 countries by number of tested citizens
+covid_top_10 <- head(covid_df_all_states_daily_sum, 10)
+covid_top_10
+
+# let's transform these data in vectors
+countries <- covid_top_10$Country_Region
+countries
+
+tested_cases <- covid_top_10$tested
+tested_cases
+names(tested_cases) <- countries
+tested_cases
+
+positive_cases <- covid_top_10$positive
+positive_cases
+names(positive_cases) <- countries
+positive_cases
+
+active_cases <- covid_top_10$active
+active_cases
+names(active_cases) <- countries
+active_cases
+
+hospitalized_cases <- covid_top_10$hospitalized
+hospitalized_cases
+names(hospitalized_cases) <- countries
+hospitalized_cases
+
+# let's calculate some rates
+positive_tested_rate <- positive_cases / tested_cases
+positive_tested_rate
+
+positive_tested_top_3 <-  head(sort(positive_tested_rate, decreasing = T), 3)
+positive_tested_top_3
+
+# creating 3 vectors with the data we find
+united_kingdom <- c(0.11, 1473672, 166909, 0, 0)
+united_states <- c(0.10, 17282363, 1877179, 0, 0)
+turkey <- c(0.08, 2031192, 163941, 2980960, 0)
+# create a matrix combining the vectors
+covid_mat <- rbind(united_kingdom, united_states, turkey)
+# rename the columns of this matrix
+colnames(covid_mat) <- c("Ratio", "tested", "positive", "active", "hospitalized")
+covid_mat
+
+question <- "Which countries have had the highest number of positive cases against the number of tests?"
+answer <- paste(names(positive_tested_top_3[1]), "has the highest rate of positiveness")
+paste(question, answer)
+
+# let's store every dataset and subset in single list
+list.df <- list(covid_df, covid_df_all_states, covid_df_all_states_daily, covid_top_10)
+list.df
+
+list.mtx <- list(covid_mat)
+list.mtx
+
+list.vec <- list(vector_cols, countries)
+list.vec
+
+# let's make a list of lists
+data_structure_list <- list(list.df, list.mtx, list.vec)
+data_structure_list
+
+covid_analysis_list <- list(question, answer, data_structure_list)
+covid_analysis_list
+
+covid_analysis_list[[2]]
