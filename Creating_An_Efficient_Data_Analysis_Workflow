@@ -1,0 +1,171 @@
+# GUIDED PROJECT OF DATAQUEST: Creating An Efficient Data Analysis Workflow
+
+# In this guided project, we will be acting as a data analyst for a company that
+ # sells books for learning programming. Your company has produced multiple books,
+ # and each has received many reviews. Your company wants us to check out the
+ # sales data and see if we can extract any useful information from it.
+
+
+# Getting Familiar With The Data ----
+
+library(tidyverse)
+
+dataset <- read_csv("data/book_reviews.csv")
+
+dim(dataset)
+colnames(dataset)
+
+str(dataset)
+glimpse(dataset)
+head(dataset)
+
+# review should be an ordered factor
+# books' names should be in skake_case
+
+is.na(dataset) # there are some NAs
+
+# using a for loop to see the data type of the dataset
+for (col in dataset) {
+  data <- typeof(col)
+  print(data)
+}
+
+# let's find unique values for each column
+unique(dataset$book)
+unique(dataset$review) # there are NA values
+unique(dataset$state) # California and CA, Texas and TX are the same states
+unique(dataset$price)
+
+
+# Handling Missing Data ----
+
+# Let's remove the NA rows, we have 2 options
+dataset %>% 
+  filter(is.na(review)) # I'm going to remove 206 rows with missing values
+drop_na(dataset, review)
+book_reviews <- dataset %>% 
+  filter(!is.na(review)) %>% 
+  glimpse()
+
+
+# Dealing With Inconsistent Labels ----
+
+# I prefer postal codes
+book_reviews <- book_reviews %>%
+  mutate(
+    state = case_when(
+      state == "California" ~ "CA",
+      state == "New York" ~ "NY",
+      state == "Texas" ~ "TX",
+      state == "Florida" ~ "FL",
+      TRUE ~ state # ignore cases where it's already postal code
+  )) %>% 
+  glimpse()
+
+unique(book_reviews$state)
+
+
+# Transforming The Review Data ----
+
+book_reviews <- book_reviews %>%
+  mutate(
+    review_num = case_when(
+      review == "Poor" ~ 1,
+      review == "Fair" ~ 2,
+      review == "Good" ~ 3,
+      review == "Great" ~ 4,
+      review == "Excellent" ~ 5
+    )
+    ) %>% 
+  glimpse()
+
+
+unique(book_reviews$review_num)
+
+# Let's put review as an ordered factor
+book_reviews <- book_reviews %>%
+  mutate(
+    review = as.factor(review)
+    ) %>%
+  mutate(
+    review = ordered(review, levels = c("Poor",
+                                        "Fair",
+                                        "Good",
+                                        "Great",
+                                        "Excellent")
+                     )
+    ) %>% 
+  glimpse()
+str(book_reviews$review)
+
+# New column
+book_reviews <- book_reviews %>%
+  mutate(
+    is_high_review = if_else(review_num >= 4, TRUE, FALSE)
+  ) %>% 
+  glimpse()
+
+
+# Analyzing The Data ----
+
+# The most profitable book should be the one that generates more money
+books_profit <- book_reviews %>% 
+  group_by(book) %>% 
+  summarize(
+    purchased = n()
+  ) %>% 
+  arrange(-purchased)
+books_profit # here I calculated the number of sells for each book with a review
+
+books_profit_original <- dataset %>% 
+  group_by(book) %>% 
+  summarize(
+    purchased = n()
+  ) %>% 
+  arrange(-purchased)
+books_profit_original # here I calculated the number of sells for each book sold
+
+# I'll show the prices of each book
+book <- c("Secrets Of R For Advanced Students",
+           "Fundamentals of R For Beginners",
+           "Top 10 Mistakes R Beginners Make",
+           "R Made Easy",
+           "R For Dummies")
+prices <- c(50.00, 39.99, 29.99, 19.99, 15.99)
+books_prices <- as_tibble(cbind(book, prices))
+books_prices <- books_prices %>% 
+  mutate(
+    prices = as.double(prices)
+  )
+
+# The operation of assigning the right price to the books could be done by joining
+merge(books_profit, books_prices, all.x = T, all.y = T)
+merge.data.frame(books_profit, books_prices)
+books_profit <- left_join(books_profit, books_prices)
+books_profit <- books_profit %>% 
+  mutate(
+    profits = purchased * prices
+  ) %>% 
+  arrange(-profits)
+books_profit
+
+
+
+# Reporting The Results ----
+
+# "What's our most profitable book?"
+ # 'Secrets Of R For Advanced Students'
+
+## Introduction ----
+ # What motivated our analysis?
+ # What kind of data do we have?
+ # What is the main question we're trying to answer?
+
+## Findings ----
+ # What did we need to do to the data to do our analysis?
+ # What things are we calculating to answer our main question?
+
+## Conclusion ----
+ # What is the answer to our main question?
+ # Was there anything that we feel limits our analysis?
+ # What should the reader do with our findings?
